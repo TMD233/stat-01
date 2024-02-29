@@ -72,13 +72,15 @@ markdown_extensions:
 #         property: UA-XXXXXXXXX-X
 
 nav:
-    - Home: index.md
+    - Home: index.mdS
     - Installation: installation.md
     - Usage: usage.md
     - Contributing: contributing.md
     - FAQ: faq.md
     - Changelog: changelog.md
     - Report Issues: https://github.com/TMD233/stat-01/issues
+    - Notebook :
+        -Notebook/lab4.ipynb
     - Examples:
         - examples/intro.ipynb
     - API Reference:
