@@ -80,7 +80,7 @@ nav:
     - Changelog: changelog.md
     - Report Issues: https://github.com/TMD233/stat-01/issues
     - Notebook :
-        -Notebook/lab4.ipynb
+        - Notebook/lab4.ipynb
     - Examples:
         - examples/intro.ipynb
     - API Reference:
