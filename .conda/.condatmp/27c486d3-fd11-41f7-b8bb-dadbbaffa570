@@ -1,0 +1,13 @@
+prefix=e:/BAS475/stat-01-1/.conda/Library
+exec_prefix=e:/BAS475/stat-01-1/.conda/Library
+libdir=e:/BAS475/stat-01-1/.conda/Library/lib
+sharedlibdir=e:/BAS475/stat-01-1/.conda/Library/lib
+includedir=e:/BAS475/stat-01-1/.conda/Library/include
+
+Name: zlib
+Description: zlib compression library
+Version: 1.2.13
+
+Requires:
+Libs: -L${libdir} -L${sharedlibdir} -lz
+Cflags: -I${includedir}
