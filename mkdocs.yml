@@ -83,6 +83,7 @@ nav:
         - Notebook/lab4.ipynb
         - Notebook/lab5.ipynb
         - Notebook/lab06.ipynb
+        - Notebook/lab7.ipynb
     - Examples:
         - examples/intro.ipynb
         - examples/Map.ipynb
