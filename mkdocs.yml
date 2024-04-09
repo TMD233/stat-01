@@ -84,6 +84,7 @@ nav:
         - Notebook/lab5.ipynb
         - Notebook/lab06.ipynb
         - Notebook/lab7.ipynb
+        - Notebook/lab8.ipynb
     - Examples:
         - examples/intro.ipynb
         - examples/Map.ipynb

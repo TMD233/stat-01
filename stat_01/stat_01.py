@@ -124,6 +124,29 @@ class Map(ipyleaflet.Map):
                 print("File format not recognized. Please provide a GeoDataFrame, GeoJSON, or Shapefile.")
         else:
             raise ValueError("Input must be a GeoDataFrame, file path, or URL.")
+    def add_raster(self, cog_path, layer_name="COG Layer", colormap=None):
+        """Add a Cloud Optimized GeoTIFF (COG) to the map.
+
+        Args:
+            cog_path (str): The path or URL to the COG file.
+            layer_name (str): A name for the layer.
+            colormap (str): Optional. A colormap name.
+        """
+        with rasterio.open(cog_path) as src:
+            data = src.read(1)  # Reading the first band
+            bounds = [src.bounds.bottom, src.bounds.left, src.bounds.top, src.bounds.right]
+            raster = RasterLayer(data=data, bounds=bounds, colormap=colormap)
+            self.add_layer(raster)
+    
+    def add_image(self, image_path, bounds):
+        """Add a static image or GIF to the map.
+
+        Args:
+            image_path (str): The path or URL to the image file.
+            bounds (list): The geographical bounds [lat_min, lon_min, lat_max, lon_max] where the image should be placed.
+        """
+        image_overlay = ImageOverlay(url=image_path, bounds=bounds)
+        self.add_layer(image_overlay)
 
 
 
