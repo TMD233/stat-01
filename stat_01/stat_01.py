@@ -133,7 +133,7 @@ class Map(ipyleaflet.Map):
             colormap (str): Optional. A colormap name.
         """
         with rasterio.open(cog_path) as src:
-            data = src.read(1)  # Reading the first band
+            data = src.read(1) 
             bounds = [src.bounds.bottom, src.bounds.left, src.bounds.top, src.bounds.right]
             raster = RasterLayer(data=data, bounds=bounds, colormap=colormap)
             self.add_layer(raster)
