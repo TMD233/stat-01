@@ -1,152 +1,100 @@
 """Main module."""
+from ipyleaflet import Map, TileLayer, LayersControl, GeoJSON, ImageOverlay, basemaps, WidgetControl
+from ipywidgets import Dropdown, Button, VBox
+import requests
+import json
+from io import BytesIO
+from zipfile import ZipFile
+import geopandas as gpd
+import rasterio
 
-import ipyleaflet
+class CustomMap(Map):
+    """
+    This class inherits from ipyleaflet.Map to add enhanced functionality, including interactive basemap selection.
+    """
+    def __init__(self, center=(20, 0), zoom=2, **kwargs):
+        super().__init__(center=center, zoom=zoom, **kwargs)
+        self.add_control(LayersControl())
+        self.initialize_ui()  
 
-class Map(ipyleaflet.Map):
-    """
-    This is map class that inherits from ipyleaflet. Map
-    """
-    def __init__(self, center=[20,0], zoom=2, **kwargs):
+    def add_basemap(self, basemap_name):
         """
+        Adds a predefined basemap to the map visualization based on the name provided.
+        
         Args:
-            center(list):Set the center of the map.
-            zoom(int):Set zoom of the map.
+            basemap_name (str): Name of the basemap to add.
         """
-        super().__init__(center=center, zoom=zoom, **kwargs) 
-        self.add_control(ipyleaflet.LayersControl())
-    def add_basemap(self, basemap):
-        """
-        Adds a basemap to the map visualization.
+        basemap_options = {
+            'OpenStreetMap': basemaps.OpenStreetMap.Mapnik,
+            'OpenTopoMap': basemaps.OpenTopoMap,
+            'Esri World Imagery': basemaps.Esri.WorldImagery,
+            'CartoDB Dark Matter': basemaps.CartoDB.DarkMatter
+        }
+        layer = TileLayer(url=basemap_options.get(basemap_name, basemaps.OpenStreetMap.Mapnik)['url'], name=basemap_name)
+        self.clear_layers()
+        self.add_layer(layer)
 
-        Parameters:
-        - basemap (str): The name of the basemap to add. This can be a predefined name (e.g., 'OpenStreetMap') 
-        or a URL to a custom TileLayer.
-
-        Returns:
-        None
+    def initialize_ui(self):
         """
-        if basemap == 'OpenStreetMap':
-            folium.TileLayer('OpenStreetMap').add_to(self.map)
-        elif basemap.startswith('http'):
-            folium.TileLayer(basemap).add_to(self.map)
-        else:
-            print("Basemap not recognized. Using OpenStreetMap as default.")
-            folium.TileLayer('OpenStreetMap').add_to(self.map)
-            
-    def show(self):
+        Initializes UI components for interactive basemap selection.
         """
-        Renders and displays the current map with all added layers (basemaps, GeoJSON, shapefiles, etc.).
+        basemap_dropdown = Dropdown(
+            options=[
+                ('OpenStreetMap', 'OpenStreetMap'),
+                ('OpenTopoMap', 'OpenTopoMap'),
+                ('Esri World Imagery', 'Esri World Imagery'),
+                ('CartoDB Dark Matter', 'CartoDB Dark Matter')
+            ],
+            value='OpenStreetMap',
+            description='Basemaps:'
+        )
 
-        Parameters:
-        None
+        close_button = Button(description="Close Dropdown")
 
-        Returns:
-        A folium map object that can be displayed in Jupyter notebooks or saved as an HTML file.
-        """
-        return self.map
+        dropdown_container = VBox([basemap_dropdown, close_button])
+
+        def on_basemap_change(change):
+            self.add_basemap(change['new'])
+
+        basemap_dropdown.observe(on_basemap_change, names='value')
+
+        def close_dropdown(b):
+            dropdown_container.layout.display = 'none'
+
+        close_button.on_click(close_dropdown)
+
+        self.add_control(WidgetControl(widget=dropdown_container, position='topright'))
+
     def add_geojson(self, geojson_input):
         """
         Adds GeoJSON data to the map.
-
-        Parameters:
-        - geojson_input (str | dict): The GeoJSON data to add. Can be a file path, a URL to a GeoJSON file, 
-        or a GeoJSON dictionary.
-
-        Returns:
-        None
-
-        Exceptions:
-        - ValueError: Raised if geojson_input is not a valid file path, URL, or dictionary.
+        
+        Args:
+            geojson_input (str | dict): URL, file path, or dictionary containing GeoJSON data.
         """
-        if isinstance(geojson_input, str):
-            if geojson_input.startswith('http'):
-                # Handle URL
-                response = requests.get(geojson_input)
-                geojson_data = response.json()
-            else:
-                # Handle file path
-                with open(geojson_input) as f:
-                    geojson_data = f.read()
+        if isinstance(geojson_input, str) and geojson_input.startswith('http'):
+            response = requests.get(geojson_input)
+            geojson_data = response.json()
+        elif isinstance(geojson_input, str):
+            with open(geojson_input) as f:
+                geojson_data = json.load(f)
         elif isinstance(geojson_input, dict):
             geojson_data = geojson_input
         else:
-            raise ValueError("Input must be a file path, URL, or dictionary.")
-        
-        folium.GeoJson(geojson_data).add_to(self.map)
-    def add_shp(self, shp_path):
-        """
-        Adds shapefile data to the map.
+            raise ValueError("Input must be a URL, file path, or dictionary.")
+        geojson_layer = GeoJSON(data=geojson_data)
+        self.add_layer(geojson_layer)
 
-        Parameters:
-        - shp_path (str): The file path or URL to a zipped shapefile. If a URL is provided, 
-        the method will attempt to download and extract the shapefile.
-
-        Returns:
-        None
-
-        Exceptions:
-        - ValueError: Might be implicitly raised by gpd.read_file or requests.get if the path or URL is invalid 
-        (though not explicitly handled in the provided code).
-        """
-        if shp_path.startswith('http'):
-            # Download the shapefile zip
-            response = requests.get(shp_path)
-            zip_file = ZipFile(BytesIO(response.content))
-            shp_file = [name for name in zip_file.namelist() if name.endswith('.shp')][0]
-            gdf = gpd.read_file(zip_file.open(shp_file))
-        else:
-            gdf = gpd.read_file(shp_path)
-        
-        folium.GeoJson(data=gdf["geometry"]).add_to(self.map)
-    def add_vector(self, vector_data):
-        """
-        Adds vector data to the map. Can handle GeoPandas GeoDataFrames, GeoJSON files, or shapefiles.
-
-        Parameters:
-        - vector_data (gpd.GeoDataFrame | str): The vector data to add. Can be a GeoPandas GeoDataFrame, 
-        a file path, or a URL to a GeoJSON or zipped shapefile.
-
-        Returns:
-        None
-
-        Exceptions:
-        - ValueError: Raised if vector_data is not a GeoDataFrame, file path, or URL, or if the file format is 
-        not recognized.
-        """
-        if isinstance(vector_data, gpd.GeoDataFrame):
-            folium.GeoJson(data=vector_data["geometry"]).add_to(self.map)
-        elif isinstance(vector_data, str):
-            if vector_data.endswith('.shp') or vector_data.startswith('http'):
-                self.add_shp(vector_data)
-            elif vector_data.endswith('.json') or vector_data.startswith('http'):
-                self.add_geojson(vector_data)
-            else:
-                print("File format not recognized. Please provide a GeoDataFrame, GeoJSON, or Shapefile.")
-        else:
-            raise ValueError("Input must be a GeoDataFrame, file path, or URL.")
-    def add_raster(self, cog_path, layer_name="COG Layer", colormap=None):
-        """Add a Cloud Optimized GeoTIFF (COG) to the map.
-
-        Args:
-            cog_path (str): The path or URL to the COG file.
-            layer_name (str): A name for the layer.
-            colormap (str): Optional. A colormap name.
-        """
-        with rasterio.open(cog_path) as src:
-            data = src.read(1) 
-            bounds = [src.bounds.bottom, src.bounds.left, src.bounds.top, src.bounds.right]
-            raster = RasterLayer(data=data, bounds=bounds, colormap=colormap)
-            self.add_layer(raster)
-    
     def add_image(self, image_path, bounds):
-        """Add a static image or GIF to the map.
-
-        Args:
-            image_path (str): The path or URL to the image file.
-            bounds (list): The geographical bounds [lat_min, lon_min, lat_max, lon_max] where the image should be placed.
         """
-        image_overlay = ImageOverlay(url=image_path, bounds=bounds)
-        self.add_layer(image_overlay)
+        Adds an image overlay to the map.
+        
+        Args:
+            image_path (str): URL or local path to the image.
+            bounds (tuple): Bounds of the image overlay as (lat_min, lon_min, lat_max, lon_max).
+        """
+        image_layer = ImageOverlay(url=image_path, bounds=bounds)
+        self.add_layer(image_layer)
 
 
 

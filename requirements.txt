@@ -2,3 +2,5 @@ numpy
 ipyleaflet
 pandas
 localtileserver
+geopandas
+ipywidgets
